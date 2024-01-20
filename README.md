@@ -1,5 +1,5 @@
 # demo-terraform-aks
-AKS deployment AKS with Mysql Service and wordpress app with HPA and peering to asureVM
+AKS deployment AKS with Mysql Service and wordpress app with HPA and peering to azureVM
 
 
 Manual Deployment
@@ -17,7 +17,7 @@ az aks get-credentials --resource-group demo-terraform-aks --name dev-demo
 ## Create Public and Private load balancers
 
 ```bash
-kubectl apply -f kubernetes/pubic-private-lb
+kubectl apply -f kubernetes/public-private-lb
 kubectl get svc
 
 ```
@@ -57,5 +57,12 @@ kubectl get ing
 ```bash
 kubectl apply -f kubernetes/hpa
 kubectl get pods 
-kubectl describe pods <podnamè>
+kubectl describe pods <podname>
+```
+
+
+## Setup peering vm to aks
+
+```bash
+by default we dont need peering since we place the vm to subnet2 under the same VNet
 ```
