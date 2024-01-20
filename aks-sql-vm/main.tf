@@ -285,3 +285,12 @@ resource "azurerm_mysql_flexible_server" "default" {
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.default]
 }
+
+# Manages the MySQL Flexible Server Database
+resource "azurerm_mysql_flexible_database" "main" {
+  charset             = "utf8mb4"
+  collation           = "utf8mb4_unicode_ci"
+  name                = "mysqldb"
+  resource_group_name = azurerm_resource_group.this.name
+  server_name         = azurerm_mysql_flexible_server.default.name
+}

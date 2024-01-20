@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: wordpress-v1
+  name: wordpress
 spec:
   ingressClassName: external-nginx
   rules:
@@ -13,6 +13,6 @@ spec:
             pathType: Exact
             backend:
               service:
-                name: echoserver-v1
+                name: blog-nginx-servic
                 port:
                   number: 8080
