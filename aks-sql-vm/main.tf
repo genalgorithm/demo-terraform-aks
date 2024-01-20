@@ -24,27 +24,42 @@ terraform {
   }
 }
 
+#resouce group
 resource "azurerm_resource_group" "this" {
   name     = local.resource_group_name
   location = local.region
 }
 
+# Manages the Virtual Network
 resource "azurerm_virtual_network" "this" {
-  name                = "main"
   address_space       = ["10.160.0.0/16"]
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
-
+  location            = local.region
+  name                = "main"
+  resource_group_name = local.resource_group_name
   tags = {
     env = local.env
   }
+
 }
 
+# Manages the Subnet
 resource "azurerm_subnet" "subnet1" {
-  name                 = "subnet1"
   address_prefixes     = ["10.160.0.0/19"]
-  resource_group_name  = azurerm_resource_group.this.name
-  virtual_network_name = azurerm_virtual_network.this.name
+  name                 = "subnet1"
+  resource_group_name  = local.resource_group_name
+  virtual_network_name = "main"
+  service_endpoints    = ["Microsoft.Storage"]
+
+  delegation {
+    name = "fs"
+
+    service_delegation {
+      name = "Microsoft.DBforMySQL/flexibleServers"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+      ]
+    }
+  }
 }
 
 resource "azurerm_subnet" "subnet2" {
@@ -55,6 +70,24 @@ resource "azurerm_subnet" "subnet2" {
 }
 
 
+# Enables you to manage Private DNS zones within Azure DNS
+resource "azurerm_private_dns_zone" "default" {
+  name                = "mysql.mysql.database.azure.com"
+  resource_group_name = azurerm_resource_group.this.name
+}
+
+# Enables you to manage Private DNS zone Virtual Network Links
+resource "azurerm_private_dns_zone_virtual_network_link" "default" {
+  name                  = "mysqlfsVnetZone.com"
+  private_dns_zone_name = azurerm_private_dns_zone.default.name
+  resource_group_name   = azurerm_resource_group.this.name
+  virtual_network_id    = azurerm_virtual_network.this.id
+
+  depends_on = [azurerm_subnet.subnet1]
+}
+
+
+#user identity
 resource "azurerm_user_assigned_identity" "base" {
   name                = "base"
   location            = azurerm_resource_group.this.location
@@ -67,6 +100,9 @@ resource "azurerm_role_assignment" "base" {
   principal_id         = azurerm_user_assigned_identity.base.principal_id
 }
 
+
+
+#aks 
 resource "azurerm_kubernetes_cluster" "this" {
   name                = "${local.env}-${local.aks_name}"
   location            = azurerm_resource_group.this.location
@@ -123,6 +159,7 @@ resource "azurerm_kubernetes_cluster" "this" {
   ]
 }
 
+#node pools
 resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   name                  = "spot"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.this.id
@@ -172,7 +209,7 @@ provider "helm" {
     cluster_ca_certificate = base64decode(data.azurerm_kubernetes_cluster.this.kube_config.0.cluster_ca_certificate)
   }
 }
-
+#external nginx
 resource "helm_release" "external_nginx" {
   name = "external"
 
@@ -185,7 +222,7 @@ resource "helm_release" "external_nginx" {
   values = [file("${path.module}/values/ingress.yaml")]
 }
 
-
+#cert manager
 resource "helm_release" "cert_manager" {
   name = "cert-manager"
 
@@ -201,6 +238,7 @@ resource "helm_release" "cert_manager" {
   }
 }
 
+#identity
 resource "azurerm_user_assigned_identity" "dev_test" {
   name                = "dev-test"
   location            = azurerm_resource_group.this.location
@@ -216,4 +254,34 @@ resource "azurerm_federated_identity_credential" "dev_test" {
   subject             = "system:serviceaccount:dev:my-account"
 
   depends_on = [azurerm_kubernetes_cluster.this]
+}
+
+# Manages the MySQL Flexible Server
+resource "azurerm_mysql_flexible_server" "default" {
+  location                     = azurerm_resource_group.this.location
+  name                         = "mysql"
+  resource_group_name          = azurerm_resource_group.this.name
+  administrator_login          = "mysql"
+  administrator_password       = "password"
+  backup_retention_days        = 7
+  delegated_subnet_id          = azurerm_subnet.subnet1.id
+  geo_redundant_backup_enabled = false
+  private_dns_zone_id          = azurerm_private_dns_zone.default.id
+  sku_name                     = "GP_Standard_D2ds_v4"
+  version                      = "8.0.21"
+
+  high_availability {
+    mode                      = "SameZone"
+  }
+  maintenance_window {
+    day_of_week  = 0
+    start_hour   = 8
+    start_minute = 0
+  }
+  storage {
+    iops    = 360
+    size_gb = 20
+  }
+
+  depends_on = [azurerm_private_dns_zone_virtual_network_link.default]
 }

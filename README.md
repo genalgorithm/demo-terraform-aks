@@ -2,12 +2,14 @@
 AKS deployment AKS with Mysql Service and wordpress app with HPA and peering to asureVM
 
 
-
+Manual Deployment
 ```bash
 az login
 az account list
 az account set --subscription <id>
+cd aks-sql-vm/
 terraform init
+terraform plan
 terraform apply
 az aks get-credentials --resource-group demo-terraform-aks --name dev-demo
 ```
