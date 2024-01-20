@@ -51,3 +51,11 @@ kubectl get ing
 kubectl get Certificate
 kubectl get ing
 ```
+
+## Setup Horizontal Pod Autoscaler
+
+```bash
+kubectl apply -f kubernetes/hpa
+kubectl get pods 
+kubectl describe pods <podnamè>
+```

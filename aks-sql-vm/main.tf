@@ -252,6 +252,21 @@ resource "helm_release" "cert_manager" {
   }
 }
 
+#resource "kubernetes_horizontal_pod_autoscaler" "this" {
+#  metadata {
+#    name = "terraform-aks"
+#  }
+
+#  spec {
+#    min_replicas = 6
+
+#    scale_target_ref {
+#      kind = "Deployment"
+#      name = "wp-blog"
+#   }
+#  }
+#}
+
 #identity
 resource "azurerm_user_assigned_identity" "dev_test" {
   name                = "dev-test"
