@@ -1,0 +1,34 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- job: job1
+  steps:
+  - script: |
+      export ARM_CLIENT_ID="$(ARM_CLIENT_ID)" && \
+      export ARM_CLIENT_SECRET="$(ARM_CLIENT_SECRET)" && \
+      export ARM_TENANT_ID="$(ARM_TENANT_ID)" && \
+      export ARM_SUBSCRIPTION_ID="$(ARM_SUBSCRIPTION_ID)" && \
+      az aks get-credentials --resource-group demo-terraform-aks --name dev-demo--overwrite-existing --file .kubeconfig-dev-demo
+      
+      #verify public and private lb
+      kubectl apply -f kubernetes/public-private-lb
+      kubectl get svc
+      kubectl get ing
+      
+      #run to trigger autoscaling
+      kubectl get nodes
+      kubectl apply -f kubernetes/autoscaling
+      kubectl get pods
+      
+      #wordpress deploy with ingress and tls
+      kubectl get svc -n ingress
+      kubectl apply -f kubernetes/wordpress
+      kubectl get pods
+      kubectl get ing
+
+   displayName: 'deploy kubernetes resources'
+    
