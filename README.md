@@ -33,21 +33,14 @@ kubectl get pods
 kubectl get nodes
 ```
 
-## Create an Ingress using Nginx Ingress
+## Create an Ingress using Nginx Ingress with Secure TLS & Cert-manage
 
 ```bash
 kubectl get svc -n ingress
 kubectl apply -f kubernetes/wordpress
 kubectl get pods
 kubectl get ing
-```
 
-## Secure the Ingress with TLS & Cert-manager
-
-```bash
-kubectl apply -f kubernetes/certmanger
-kubectl get pods
-kubectl get ing
 kubectl get Certificate
 kubectl describe Certificate
 kubectl describe CertificateRequest
@@ -58,4 +51,3 @@ kubectl get ing
 kubectl get Certificate
 kubectl get ing
 ```
-
