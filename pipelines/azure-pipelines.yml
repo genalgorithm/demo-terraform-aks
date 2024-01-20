@@ -1,0 +1,27 @@
+#to setup add the github repository as pipeline source repo in azure devops
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- job: job1
+  steps:
+  - task: TerraformInstaller@1
+    inputs:
+      terraformVersion: 'latest'
+
+  - script: |
+      export ARM_CLIENT_ID="$(ARM_CLIENT_ID)" && \
+      export ARM_CLIENT_SECRET="$(ARM_CLIENT_SECRET)" && \
+      export ARM_TENANT_ID="$(ARM_TENANT_ID)" && \
+      export ARM_SUBSCRIPTION_ID="$(ARM_SUBSCRIPTION_ID)" && \
+      cd aks-mysql-vm && \
+      terraform init && \
+      terraform fmt && \
+      terraform validate && \
+      terraform plan -out=aks.tfplan
+      terraform apply -auto-approve aks.tfplan
+    displayName: 'Run terraform to provision aks cluster mysql and vm'
+    
